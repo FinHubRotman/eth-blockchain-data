@@ -173,7 +173,10 @@ class Blocks():
     # parallel version of getting data
     def _par_data_between(self, start_block, end_block):
         pass
-
+    
+    '''
+    an old legacy function with no uses
+    '''
     # def par_data_on_date(self, date_time): #date_time must be type datetime in utc
     #     # compute the start/end blocks
     #     days_away = (self.current_datetime - date_time).days
