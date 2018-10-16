@@ -56,14 +56,12 @@ def get_day_start_block(block, reach_timestamp, counts=0):
         else:
             return get_day_start_block(block + block_delta, reach_timestamp, counts=counts+1)
 
-def parition_list(some_list, interval_length):
-    starts = some_list[::interval_length]
-    ends = some_list[interval_length-1:][::interval_length] + some_list[-1:]
-    return list(zip(starts,ends))   
-
-def block_partitions(start_block, end_block, interval_length):
+#partitions the block into [x,y] where x-y = interval_length
+def block_partitions(start_block, end_block, interval_length): 
     all_blocks = [start_block + i for i in range(end_block-start_block+1)]
-    return parition_list(all_blocks, interval_length)   
+    starts = all_blocks[::interval_length]
+    ends = all_blocks[interval_length-1:][::interval_length] + all_blocks[-1:]
+    return list(zip(starts,ends))
 
 def get_log_partitions(from_block, to_block, addr, interval_length=100):
     partitions = block_partitions(from_block, to_block, interval_length)
