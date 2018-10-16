@@ -109,7 +109,6 @@ class Blocks():
         pool = Pool(processes=4)
 
         # get tx times, a job
-        
         tx_times = pool.map(get_tx_times_single, block_numbers)
 
         # get tx data, a job

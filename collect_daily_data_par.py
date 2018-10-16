@@ -1,9 +1,12 @@
 def agg_data(final_data):
     total_tx = len(final_data)
-    total_gas = sum([x['gasUsed'] for x in final_data])
-    gw_gasprice = sum([x['gasPrice']*(x['gasUsed']/total_gas) for x in final_data])
-    gw_mean_gasprice = np.mean([x['gasPrice']*(x['gasUsed']/total_gas) for x in final_data])
-    return {'total_tx':total_tx, 'total_gas':total_gas, 'gw_gasprice':gw_gasprice, 'gw_mean_gasprice':gw_mean_gasprice}
+    try:
+        total_gas = sum([x['gasUsed'] for x in final_data])
+        gw_gasprice = sum([x['gasPrice']*(x['gasUsed']/total_gas) for x in final_data])
+        gw_mean_gasprice = np.mean([x['gasPrice']*(x['gasUsed']/total_gas) for x in final_data])
+        return {'total_tx':total_tx, 'total_gas':total_gas, 'gw_gasprice':gw_gasprice, 'gw_mean_gasprice':gw_mean_gasprice}
+    except TypeError:
+        return {'total_tx':None, 'total_gas':None, 'gw_gasprice':None, 'gw_mean_gasprice':None}
 
 def rm_inv_filename(filename):
     return re.sub('[<>:"\\|?*]', '', filename) 
@@ -26,17 +29,14 @@ def write_token_data(start_date, date, token_list):
             with open(filename, 'a', newline="") as f:
                 writer = csv.DictWriter(f, fieldnames=['date', 'total_tx', 'total_gas', 'gw_gasprice', 'gw_mean_gasprice'])
                 blocks = Blocks(addr)
-                if (start_date - date).days < 100: # if we're 100
-                    date_data = blocks.data_on_date(date)
-                    date = date.strftime('%Y-%m-%d')
-                    data_with_date = {**{'date':date}, **agg_data(date_data)}
-                    writer.writerow(data_with_date)
-                    print(name, data_with_date)
-                else:
-                    date_data = blocks.par_data_on_date(date)
-                    date = date.strftime('%Y-%m-%d')
-                    data_with_date = {**{'date':date}, **agg_data(date_data)}
-                    writer.writerow(data_with_date)
+                start = time.time()
+                print(name, sym, addr)
+                date_data = blocks.par_data_on_date(date)
+                print(time.time()-start)
+                date = date.strftime('%Y-%m-%d')
+                data_with_date = {**{'date':date}, **agg_data(date_data)}
+                writer.writerow(data_with_date)
+                print(name, data_with_date)
 
 if __name__ == '__main__':
     import datetime
@@ -76,12 +76,12 @@ if __name__ == '__main__':
 
     start_date = datetime.datetime(2018,10,1)
     # for i in list(range(273))[:]: # go backwards in time
-    dates = [start_date + datetime.timedelta(days=-1*i) for i in range(273)]
+    dates = [start_date + datetime.timedelta(days=-1*i) for i in range(1)]
     fix_start = functools.partial(write_token_data, start_date)
     procs = []
     for date in dates:
         fix_date = functools.partial(fix_start, date)
-        t = threading.Thread(target=fix_start, args=(new_lists,))
+        t = threading.Thread(target=fix_date, args=(new_lists,))
         procs.append(t)
 
     for proc in procs:
