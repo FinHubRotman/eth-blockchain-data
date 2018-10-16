@@ -7,6 +7,7 @@ import calendar
 import threading
 import numpy as np
 import multiprocessing as mp
+import pytz
 
 from multiprocessing import Pool
 from operator import itemgetter
@@ -98,25 +99,25 @@ class Blocks():
     # returns the data on some UTC day 
     def par_data_on_date(self, date_time):
         # compute the start/end blocks
-        days_away = (self.current_datetime - date_time).days
+        utc_date_time = pytz.utc.localize(date_time)
+        days_away = (self.current_timestamp - utc_date_time.timestamp()) // 86400
         start_block = self.days_from_block(self.current_block, days_away)
         end_block = self.days_from_block(self.current_block, days_away-1) - 1
         # sources of iteration
         logs = get_log_partitions(start_block, end_block, self.addr)
         tx_hashes = [x['transactionHash'] for x in logs]
         block_numbers = [x['blockNumber'] for x in logs]
-
+        print(start_block, end_block)
         pool = Pool(processes=4)
 
         # get tx times, a job
+        start=time.time()
         tx_times = pool.map(get_tx_times_single, block_numbers)
-
+        print(time.time()-start)
         # get tx data, a job
-
         tx_data = pool.map(get_tx_data_single, tx_hashes)
         
         # getting receipts data, a job 
-
         receipts_data = pool.map(get_receipts_data_single, tx_hashes)
 
         #aggregating data
@@ -129,26 +130,37 @@ class Blocks():
 
     def data_on_date(self, date_time):
         # compute the start/end blocks
-        days_away = (self.current_datetime - date_time).days
+        utc_date_time = pytz.utc.localize(date_time)
+        days_away = (self.current_timestamp - utc_date_time.timestamp()) // 86400
         start_block = self.days_from_block(self.current_block, days_away)
         end_block = self.days_from_block(self.current_block, days_away-1) - 1
         # sources of iteration
-        
         logs = get_log_partitions(start_block, end_block, self.addr)
+        if logs == []: # return a null value 
+            return [
+                {
+                    **dict(
+                        zip(
+                            tx_data_filter, [None for _ in range(len(tx_data_filter))]        
+                        )
+                    ),
+                    **{'timestamp':utc_date_time.timestamp()}
+                }
+            ]
+        print(start_block, end_block)
+        print(logs)
+        logs = list({x['transactionHash']:x for x in logs}.values) # get uniques 
         tx_hashes = [x['transactionHash'] for x in logs]
         block_numbers = [x['blockNumber'] for x in logs]
-
+        
         # get tx times, a job
-        tx_times = []
-        get_tx_times(block_numbers, tx_times)
-
+        tx_times = get_tx_times(block_numbers)
+        
         # get tx data, a job
-        tx_data = []
-        get_tx_data(tx_hashes, tx_data)
+        tx_data = get_tx_data(tx_hashes)
         
         # getting receipts data, a job 
-        receipts_data = []
-        get_receipts_data(tx_hashes, receipts_data)
+        receipts_data = get_receipts_data(tx_hashes)
         
         #aggregating data
         raw_data_per_tx = [{**x, **y} for x,y in zip(tx_data, receipts_data)]
