@@ -90,6 +90,18 @@ def get_receipts_data(tx_hashes):
         tmp.append(get_receipt(tx_hash))
     return tmp
 
+'''
+get single entry for parallel processing
+'''
+def get_tx_times_single(block_number):
+    return get_block(block_number)['timestamp']
+
+def get_tx_data_single(tx_hash):
+    return get_tx(tx_hash)
+
+def get_receipts_data_single(tx_hash):
+    return get_receipt(tx_hash)    
+
 @retry
 def get_tx(tx_hash):
     return w3.eth.getTransaction(tx_hash)
