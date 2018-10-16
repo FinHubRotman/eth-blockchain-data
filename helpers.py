@@ -56,11 +56,14 @@ def get_day_start_block(block, reach_timestamp, counts=0):
         else:
             return get_day_start_block(block + block_delta, reach_timestamp, counts=counts+1)
 
+def parition_list(some_list, interval_length):
+    starts = some_list[::interval_length]
+    ends = some_list[interval_length-1:][::interval_length] + some_list[-1:]
+    return list(zip(starts,ends))   
+
 def block_partitions(start_block, end_block, interval_length):
     all_blocks = [start_block + i for i in range(end_block-start_block+1)]
-    starts = all_blocks[::interval_length]
-    ends = all_blocks[interval_length-1:][::interval_length] + all_blocks[-1:]
-    return list(zip(starts,ends))    
+    return parition_list(all_blocks, interval_length)   
 
 def get_log_partitions(from_block, to_block, addr, interval_length=100):
     partitions = block_partitions(from_block, to_block, interval_length)
@@ -71,35 +74,23 @@ def get_log_partitions(from_block, to_block, addr, interval_length=100):
     log_parts = list(itertools.chain.from_iterable(log_parts))
     return log_parts
 
-'''
-below four functions are meant for parallel processing only
-'''
-
-def get_tx_times(block_numbers, return_list):
+def get_tx_times(block_numbers):
+    tmp = []
     for block_num in block_numbers:
-        return_list.append(get_block(block_num)['timestamp'])
+        tmp.append(get_block(block_num)['timestamp'])
+    return tmp
 
-def get_tx_data(tx_hashes, return_list):
+def get_tx_data(tx_hashes):
+    tmp = []
     for tx_hash in tx_hashes:
-        return_list.append(get_tx(tx_hash))
+        tmp.append(get_tx(tx_hash))
+    return tmp
 
-def get_receipts_data(tx_hashes, return_list):
+def get_receipts_data(tx_hashes):
+    tmp = []
     for tx_hash in tx_hashes:
-        return_list.append(get_receipt(tx_hash))
-
-# getting stuff from queue 
-def get_data(queue, return_list):
-    while True:
-        return_list.append(queue.get())
-
-def get_tx_times_single(block_number):
-    return get_block(block_number)['timestamp']
-
-def get_tx_data_single(tx_hash):
-    return get_tx(tx_hash)
-
-def get_receipts_data_single(tx_hash):
-    return get_receipt(tx_hash)    
+        tmp.append(get_receipt(tx_hash))
+    return tmp
 
 @retry
 def get_tx(tx_hash):
