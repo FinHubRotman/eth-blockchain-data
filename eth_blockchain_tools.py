@@ -105,15 +105,26 @@ class Blocks():
         end_block = self.days_from_block(self.current_block, days_away-1) - 1
         # sources of iteration
         logs = get_log_partitions(start_block, end_block, self.addr)
+        if logs == []: # return a null value if logs empty
+            return [
+                {
+                    **dict(
+                        zip(
+                            tx_data_filter, [None for _ in range(len(tx_data_filter))]        
+                        )
+                    ),
+                    **{'timestamp':utc_date_time.timestamp()}
+                }
+            ]
+        logs = list({x['transactionHash']:x for x in logs}.values()) # get uniques 
         tx_hashes = [x['transactionHash'] for x in logs]
         block_numbers = [x['blockNumber'] for x in logs]
-        print(start_block, end_block)
-        pool = Pool(processes=4)
 
+        #starting parallelizing getting data
+        pool = Pool(processes=4)
         # get tx times, a job
-        start=time.time()
         tx_times = pool.map(get_tx_times_single, block_numbers)
-        print(time.time()-start)
+
         # get tx data, a job
         tx_data = pool.map(get_tx_data_single, tx_hashes)
         
@@ -136,7 +147,7 @@ class Blocks():
         end_block = self.days_from_block(self.current_block, days_away-1) - 1
         # sources of iteration
         logs = get_log_partitions(start_block, end_block, self.addr)
-        if logs == []: # return a null value 
+        if logs == []: # return a null value if logs empty
             return [
                 {
                     **dict(
@@ -147,9 +158,7 @@ class Blocks():
                     **{'timestamp':utc_date_time.timestamp()}
                 }
             ]
-        print(start_block, end_block)
-        print(logs)
-        logs = list({x['transactionHash']:x for x in logs}.values) # get uniques 
+        logs = list({x['transactionHash']:x for x in logs}.values()) # get uniques 
         tx_hashes = [x['transactionHash'] for x in logs]
         block_numbers = [x['blockNumber'] for x in logs]
         
